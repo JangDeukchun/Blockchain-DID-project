@@ -45,8 +45,7 @@ async def run():
      output, error = process.communicate()
  
      logger.info("Getting started -> started")
-
-    #  1. genesis transaction  등록 54번줄까지   
+ 
      pool_name = 'pool1'
      logger.info("Open Pool Ledger: {}".format(pool_name))
      pool_genesis_txn_path = get_pool_genesis_txn_path(pool_name)
@@ -62,7 +61,6 @@ async def run():
      except IndyError as ex:
          if ex.error_code == ErrorCode.PoolLedgerConfigAlreadyExistsError:
              pass
-    #  2.steward 권한을 가진 인증키 생성(steward 노드에서 실행) 85번째 줄 까지
      pool_handle = await pool.open_pool_ledger(pool_name, None)
  
      logger.info("==============================")
@@ -72,12 +70,14 @@ async def run():
      logger.info("\"Sovrin Steward\" -> Create wallet")
      steward_wallet_config = json.dumps({"id": "sovrin_steward_wallet"})
      steward_wallet_credentials = json.dumps({"key": "steward_wallet_key"})
+     
+    #  지갑 만들기 
      try:
          await wallet.create_wallet(steward_wallet_config, steward_wallet_credentials)
      except IndyError as ex:
          if ex.error_code == ErrorCode.WalletAlreadyExistsError:
              pass
- 
+    # 지갑 열어서 did와 인증키 저장
      steward_wallet = await wallet.open_wallet(steward_wallet_config, steward_wallet_credentials)
  
      logger.info("\"Sovrin Steward\" -> Create and store in Wallet DID from seed")
@@ -105,8 +105,7 @@ async def run():
      logger.info("==============================")
      logger.info("== Getting Trust Anchor credentials - app Onboarding  ==")
      logger.info("------------------------------")
-    
-    # 3. app의 did및 인증키 생성 121번째 줄까지
+ 
      app_wallet_config = json.dumps({"id": "app_wallet"})
      app_wallet_credentials = json.dumps({"key": "app_wallet_key"})
      app_wallet, steward_app_key, app_steward_did, app_steward_key, _ = \
@@ -147,16 +146,16 @@ async def run():
     #      await onboarding(pool_handle, "Sovrin Steward", steward_wallet, steward_did, "Thrift", None,
     #                       thrift_wallet_config, thrift_wallet_credentials)
  
-     logger.info("==============================")
-     logger.info("== Getting Trust Anchor credentials - Thrift getting Verinym  ==")
-     logger.info("------------------------------")
+    #  logger.info("==============================")
+    #  logger.info("== Getting Trust Anchor credentials - Thrift getting Verinym  ==")
+    #  logger.info("------------------------------")
  
     #  thrift_did = await get_verinym(pool_handle, "Sovrin Steward", steward_wallet, steward_did, steward_thrift_key,
     #                                 "Thrift", thrift_wallet, thrift_steward_did, thrift_steward_key, 'TRUST_ANCHOR')
  
-     logger.info("==============================")
-     logger.info("=== Credential Schemas Setup ==")
-     logger.info("------------------------------")
+    #  logger.info("==============================")
+    #  logger.info("=== Credential Schemas Setup ==")
+    #  logger.info("------------------------------")
  
     #  logger.info("\"Government\" -> Create \"Job-Certificate\" Schema")
     #  (job_certificate_schema_id, job_certificate_schema) = \
@@ -166,7 +165,8 @@ async def run():
  
     #  logger.info("\"Government\" -> Send \"Job-Certificate\" Schema to Ledger")
     #  await send_schema(pool_handle, government_wallet, government_did, job_certificate_schema)
- 
+    
+    # 스키마 생성 및 스키마 노드로 전송
      logger.info("\"Government\" -> Create \"Transcript\" Schema")
      (transcript_schema_id, transcript_schema) = \
          await anoncreds.issuer_create_schema(government_did, 'Transcript', '1.2',
@@ -183,7 +183,8 @@ async def run():
  
      logger.info("\"app\" -> Get \"Transcript\" Schema from Ledger")
      (_, transcript_schema) = await get_schema(pool_handle, app_did, transcript_schema_id)
- 
+
+        #Credential 생성
      logger.info("\"app\" -> Create and store in Wallet \"app Transcript\" Credential Definition")
      (app_transcript_cred_def_id, app_transcript_cred_def_json) = \
          await anoncreds.issuer_create_and_store_credential_def(app_wallet, app_did, transcript_schema,
@@ -247,6 +248,7 @@ async def run():
      (app_transcript_cred_def_id, app_transcript_cred_def) = \
          await get_cred_def(pool_handle, man_app_did, authdecrypted_transcript_cred_offer['cred_def_id'])
  
+    # vc 생성 요청에 필요한 데이터를 획득한 사용자가 api를 통해 주어진 credential offer에 대한 VC발급 요청 데이터를 생성하여 발행인에게 전송
      logger.info("\"man\" -> Create \"Transcript\" Credential Request for app")
      (transcript_cred_request_json, transcript_cred_request_metadata_json) = \
          await anoncreds.prover_create_credential_req(man_wallet, man_app_did,
@@ -264,18 +266,17 @@ async def run():
          await auth_decrypt(app_wallet, app_man_key, authcrypted_transcript_cred_request)
  
      logger.info("\"app\" -> Create \"Transcript\" Credential for man")
-    
-    #  vc 생성 및 발행 (우리 app에서) 280줄까지
      transcript_cred_values = json.dumps({
-         "last name": {"raw": "GI WOON", "encoded": "1139481716457488690172217916278103335"},
-         "first name": {"raw": "HWANG", "encoded": "5321642780241790123587902456789123452"},
-         "sex": {"raw": "MALE", "encoded": "12434523576212321"},
-        #  "이름": {"raw": "graduated", "encoded": "2213454313412354"},
-         "phone number": {"raw": "01040527935", "encoded": "3124141231422543541"},
-         "password": {"raw": "1111", "encoded": "2015"},
-        #  "average": {"raw": "5", "encoded": "5"}
+         "first_name": {"raw": "man", "encoded": "1139481716457488690172217916278103335"},
+         "last_name": {"raw": "Garcia", "encoded": "5321642780241790123587902456789123452"},
+         "degree": {"raw": "Bachelor of Science, Marketing", "encoded": "12434523576212321"},
+         "status": {"raw": "graduated", "encoded": "2213454313412354"},
+         "ssn": {"raw": "123-45-6789", "encoded": "3124141231422543541"},
+         "year": {"raw": "2015", "encoded": "2015"},
+         "average": {"raw": "5", "encoded": "5"}
      })
  
+    # vc 생성후 사용자에게 전달
      transcript_cred_json, _, _ = \
          await anoncreds.issuer_create_credential(app_wallet, transcript_cred_offer_json,
                                                   authdecrypted_transcript_cred_request_json,
@@ -291,9 +292,8 @@ async def run():
      _, authdecrypted_transcript_cred_json, _ = \
          await auth_decrypt(man_wallet, man_app_key, authcrypted_transcript_cred_json)
  
+    # vc를 지갑에 저장
      logger.info("\"man\" -> Store \"Transcript\" Credential from app")
-     
-    #  회원정보 vc저장 297번 까지
      await anoncreds.prover_store_credential(man_wallet, None, transcript_cred_request_metadata_json,
                                              authdecrypted_transcript_cred_json, app_transcript_cred_def, None)
  
@@ -310,11 +310,12 @@ async def run():
      logger.info("==============================")
      logger.info("== Apply for the job with armor - Transcript proving ==")
      logger.info("------------------------------")
-        # proof request 생성 및 전송 350까지
-     logger.info("\"armor\" -> Create \"Member information\" Proof Request")
+ 
+    # vp 검증 (1)proof request 생성하여 사용자에게 전송
+     logger.info("\"armor\" -> Create \"Job-Application\" Proof Request")
      job_application_proof_request_json = json.dumps({
          'nonce': '1432422343242122312411212',
-         'name': 'Member information',
+         'name': 'Job-Application',
          'version': '0.1',
          'requested_attributes': {
              'attr1_referent': {
@@ -352,19 +353,20 @@ async def run():
      logger.info("\"armor\" -> Get key for man did")
      man_armor_verkey = await did.key_for_did(pool_handle, armor_wallet, armor_man_connection_response['did'])
  
-     logger.info("\"armor\" -> Authcrypt \"Member information\" Proof Request for man")
+     logger.info("\"armor\" -> Authcrypt \"Job-Application\" Proof Request for man")
      authcrypted_job_application_proof_request_json = \
          await crypto.auth_crypt(armor_wallet, armor_man_key, man_armor_verkey,
                                  job_application_proof_request_json.encode('utf-8'))
  
-     logger.info("\"armor\" -> Send authcrypted \"Member information\" Proof Request to man")
+     logger.info("\"armor\" -> Send authcrypted \"Job-Application\" Proof Request to man")
  
-     logger.info("\"man\" -> Authdecrypt \"Member information\" Proof Request from armor")
+     logger.info("\"man\" -> Authdecrypt \"Job-Application\" Proof Request from armor")
      armor_man_verkey, authdecrypted_job_application_proof_request_json, _ = \
          await auth_decrypt(man_wallet, man_armor_key, authcrypted_job_application_proof_request_json)
  
-     logger.info("\"man\" -> Get credentials for \"Member information\" Proof Request")
+     logger.info("\"man\" -> Get credentials for \"Job-Application\" Proof Request")
  
+    # proof_request 에 해당되는 값 확보
      search_for_job_application_proof_request = \
          await anoncreds.prover_search_credentials_for_proof_req(man_wallet,
                                                                  authdecrypted_job_application_proof_request_json, None)
@@ -388,9 +390,8 @@ async def run():
  
      schemas_json, cred_defs_json, revoc_states_json = \
          await prover_get_entities_from_ledger(pool_handle, man_app_did, creds_for_job_application_proof, 'man')
-
-        # proof request가 요구하는 vp 생성 및 전달(사용자 실행) 410번째 줄
-     logger.info("\"man\" -> Create \"Member information\" Proof")
+    # proof가 요구하는 vp생성 및 전달
+     logger.info("\"man\" -> Create \"Job-Application\" Proof")
      job_application_requested_creds_json = json.dumps({
          'self_attested_attributes': {
              'attr1_referent': 'man',
@@ -410,22 +411,21 @@ async def run():
                                              job_application_requested_creds_json, man_master_secret_id,
                                              schemas_json, cred_defs_json, revoc_states_json)
  
-     logger.info("\"man\" -> Authcrypt \"Member information\" Proof for armor")
+     logger.info("\"man\" -> Authcrypt \"Job-Application\" Proof for armor")
      authcrypted_job_application_proof_json = await crypto.auth_crypt(man_wallet, man_armor_key, armor_man_verkey,
                                                                       job_application_proof_json.encode('utf-8'))
  
-     logger.info("\"man\" -> Send authcrypted \"Member information\" Proof to armor")
+     logger.info("\"man\" -> Send authcrypted \"Job-Application\" Proof to armor")
  
-     logger.info("\"armor\" -> Authdecrypted \"Member information\" Proof from man")
+     logger.info("\"armor\" -> Authdecrypted \"Job-Application\" Proof from man")
      _, decrypted_job_application_proof_json, decrypted_job_application_proof = \
          await auth_decrypt(armor_wallet, armor_man_key, authcrypted_job_application_proof_json)
  
      schemas_json, cred_defs_json, revoc_ref_defs_json, revoc_regs_json = \
          await verifier_get_entities_from_ledger(pool_handle, armor_did,
                                                  decrypted_job_application_proof['identifiers'], 'armor')
- 
-        # armor가 수신한 사용자의 vp  441까지
-     logger.info("\"armor\" -> Verify \"Member information\" Proof from man")
+    # 사용자로부터 수신받은 vp값
+     logger.info("\"armor\" -> Verify \"Job-Application\" Proof from man")
      assert 'Bachelor of Science, Marketing' == \
             decrypted_job_application_proof['requested_proof']['revealed_attrs']['attr3_referent']['raw']
      assert 'graduated' == \
@@ -436,8 +436,8 @@ async def run():
      assert 'man' == decrypted_job_application_proof['requested_proof']['self_attested_attrs']['attr1_referent']
      assert 'Garcia' == decrypted_job_application_proof['requested_proof']['self_attested_attrs']['attr2_referent']
      assert '123-45-6789' == decrypted_job_application_proof['requested_proof']['self_attested_attrs']['attr6_referent']
- 
-    #    vp 검증 및 Credential offer 전송 
+    
+    #  vp를 받은 검증자는 vd 내 포함된 vc와 관련된 스키마 , credential definition을 블록체인으로부터 가져오고, api를 통해 vp검증
      assert await anoncreds.verifier_verify_proof(job_application_proof_request_json,
                                                   decrypted_job_application_proof_json,
                                                   schemas_json, cred_defs_json, revoc_ref_defs_json, revoc_regs_json)
@@ -765,7 +765,7 @@ async def run():
     #  await pool.close_pool_ledger(pool_handle)
     #  await pool.delete_pool_ledger_config(pool_name)
  
-     logger.info("Getting started -> done")
+    #  logger.info("Getting started -> done")
 
 
 async def onboarding(pool_handle, _from, from_wallet, from_did, to, to_wallet: Optional[str], to_wallet_config: str,
@@ -850,28 +850,28 @@ async def get_verinym(pool_handle, _from, from_wallet, from_did, from_to_key,
 
     return to_did
 
-# endorser 등록을 위한 nym 트랜젝션 생성(steward에서 실행) 853까지 
+# 블록체인에 did를 등록하기 위한 nym 트랜젝션을 생성, 전송
 async def send_nym(pool_handle, wallet_handle, _did, new_did, new_key, role):
     nym_request = await ledger.build_nym_request(_did, new_did, new_key, None, role)
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, _did, nym_request)
 
-
+# vc 스키마 node에 등록
 async def send_schema(pool_handle, wallet_handle, _did, schema):
     schema_request = await ledger.build_schema_request(_did, schema)
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, _did, schema_request)
 
-
+# vc credential node에 등록
 async def send_cred_def(pool_handle, wallet_handle, _did, cred_def_json):
     cred_def_request = await ledger.build_cred_def_request(_did, cred_def_json)
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, _did, cred_def_request)
 
-# vc 발행 요청 생성 및 전송 (우리어플 이용자) 864번째 줄까지
+# vp 검증을 위한 스키마 호출
 async def get_schema(pool_handle, _did, schema_id):
     get_schema_request = await ledger.build_get_schema_request(_did, schema_id)
     get_schema_response = await ledger.submit_request(pool_handle, get_schema_request)
     return await ledger.parse_get_schema_response(get_schema_response)
 
-
+# vp 검증을 위한 credential 호출
 async def get_cred_def(pool_handle, _did, schema_id):
     get_cred_def_request = await ledger.build_get_cred_def_request(_did, schema_id)
     get_cred_def_response = await ledger.submit_request(pool_handle, get_cred_def_request)
