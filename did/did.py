@@ -15,7 +15,8 @@ import issue_credential as fn4
 import negotiate_proof as fn5
 import send_secure_msg as fn6
 
-from flask import Flask
+
+from flask import Flask, request
 
 pool_name = 'BoomLedgerPool'
 genesis_file_path = get_pool_genesis_txn_path(pool_name)
@@ -38,23 +39,25 @@ def main():
 async def func1():
    a = await fn1.write_nym_and_query_verkey()
    print(a)
-   return a
+   return print(a)
 
 @app.route("/b")
 async def func2():
-   await fn2.rotate_key_on_the_ledger()
+  await fn2.rotate_key_on_the_ledger()
    # b = await fn2.rotate_key_on_the_ledger()
    # print(b)
-   return "<h1>rotate_key</h1>"
+  return "<h1>rotate_key</h1>"
    # return b
+    
    
 @app.route("/c")
 async def func3():
   await fn3.write_schema_and_cred_def()
-#   c =  await fn3.write_schema_and_cred_def()
+  # c =  await fn3.write_schema_and_cred_def()
 #   print(c)
-  return "<h1>save schema</h1>"
+  return "<h1>save schema</h1>" 
 #   return c
+# 
 
 @app.route("/d")
 async def func4():
@@ -64,14 +67,22 @@ async def func4():
 #   print(d)
 #   return d
 
-@app.route("/e")
+@app.route('/e', methods=['POST'])
 async def func5():
+  if request.is_json :
+    params = request.get_json() #서버에서 보내준 회원의정보
 #   await fn5.proof_negotiation()
-  e =  await fn5.proof_negotiation()
-  print(e)
-#   return "<h1>negotiate<h1>"
+  e =  await fn5.proof_negotiation(params)
   return e
 
+
+# @app.route('/e', methods=['POST'])
+# async def func5():
+#   if request.is_json :
+#     params = request.get_json() #서버에서 보내준 회원의정보
+# #   await fn5.proof_negotiation()
+#   e =  await fn5.proof_negotiation()
+#   return params
 
 
 @app.route("/f")

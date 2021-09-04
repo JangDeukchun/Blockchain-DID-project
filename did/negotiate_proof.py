@@ -34,7 +34,13 @@ def print_log(value_color="", value_noncolor=""):
     ENDC = '\033[0m'
     print(HEADER + value_color + ENDC + str(value_noncolor))
 
-async def proof_negotiation():
+async def proof_negotiation(params):
+    genda_new = params["genda"]
+    name_new = params["name"]
+    phone_new = params["phone"]
+    email_new = params["email"]
+
+    print(genda_new, name_new, phone_new, email_new)
     try:
         await pool.set_protocol_version(PROTOCOL_VERSION)
 
@@ -170,10 +176,10 @@ async def proof_negotiation():
         print_log('\n16. Issuer (Trust Anchor) creates Credential for Credential Request\n')
         
         cred_values_json = json.dumps({
-            "genda": {"raw": "male", "encoded": "5944657099558967239210949258394887428692050081607692519917050011144233"},
-            "name": {"raw": name, "encoded": "1139481716457488690172217916278103335"},
-            "phone": {"raw": "175", "encoded": "175"},
-            "email": {"raw": "28", "encoded": "28"}
+            "genda": {"raw": genda_new, "encoded": "5944657099558967239210949258394887428692050081607692519917050011144233"},
+            "name": {"raw": name_new, "encoded": "1139481716457488690172217916278103335"},
+            "phone": {"raw": phone_new, "encoded": "175"},
+            "email": {"raw": email_new, "encoded": "28"}
         })
         (cred_json, _, _) = \
             await anoncreds.issuer_create_credential(issuer_wallet_handle,
@@ -217,7 +223,7 @@ async def proof_negotiation():
             }
         }
       
-        return("VP CODE:\n" + trust_anchor_did)
+        return("did CODE:\n" + trust_anchor_did + cred_values_json)
         
         # 19. 
         print_log('\n Prover gets Credentials for attr1_referent anf predicate1_referent\n')

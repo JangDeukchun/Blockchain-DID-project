@@ -64,7 +64,7 @@ async def write_schema_and_cred_def():
         steward_did, steward_verkey = await did.create_and_store_my_did(wallet_handle, did_json)
         print_log('Steward DID: ', steward_did)
         print_log('Steward Verkey: ', steward_verkey)
-
+        return (steward_did)
         # 6.
         print_log('\n6. Generating and storing trust anchor DID and verkey\n')
         trust_anchor_did, trust_anchor_verkey = await did.create_and_store_my_did(wallet_handle, "{}")
