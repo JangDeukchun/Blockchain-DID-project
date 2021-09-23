@@ -52,8 +52,8 @@ async def func1():
 #   return params
 
 
-host_addr = "127.0.0.1"
-port_num = "8080"
+host_addr = "0.0.0.1"
+port_num = "3000"
 
 if __name__ == "__main__":
    app.run(host=host_addr,port=port_num)
